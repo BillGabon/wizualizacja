@@ -1,0 +1,37 @@
+html {
+  background-color: rgb(112, 112, 112);
+}
+
+li {
+    display: flex;
+    justify-content: center;
+    background: rgb(250, 250, 250);
+    min-height: 100px;
+    width: 90%;
+    min-width: 10vh;
+    border-radius: 20px;
+    min-height: 35vh;
+    min-width: 28vh;
+    max-width: 100vh;
+  }
+  
+  ul,
+  li {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  ul {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .chart {
+    min-height: 27vh;
+    min-width: 27vh;
+  }
+
+  button {
+  }
