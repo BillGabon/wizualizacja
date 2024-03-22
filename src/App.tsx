@@ -2,7 +2,7 @@ import './App.css';
 import { useState, useRef } from "react";
 import { DonutChart } from '@tremor/react';
 import { AnimatePresence, motion } from 'framer-motion';
-
+//eer
 const datahero = [
   {
     name: 'Noche Holding AG',
