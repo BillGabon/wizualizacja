@@ -1,9 +1,10 @@
-import { RiBarChart2Fill, RiCircleFill, RiCircleLine, RiCollapseDiagonal2Fill, RiDownload2Line, RiExpandDiagonal2Fill, RiPaletteFill } from '@remixicon/react';
+import { RiBarChart2Fill, RiCircleFill, RiCircleLine, RiCollapseDiagonal2Fill, RiDownload2Line, RiExpandDiagonal2Fill, RiLayoutHorizontalLine, RiPaletteFill } from '@remixicon/react';
 import './App.css';
-import { DonutChart, Icon, Divider } from '@tremor/react';
+import { DonutChart, Icon, EventProps, Button, TabGroup, TabList, Tab, TabPanels, TabPanel, Card } from '@tremor/react';
 import { Reorder, motion } from 'framer-motion';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
+import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
 
 export interface WrapperProps {
     id: number;
@@ -39,6 +40,34 @@ const data = [
     },
 ];
 
+const palettes = [
+    [
+        "green-900",
+        'green-800',
+        'green-700',
+        'green-600',
+        'green-500',
+        'green-400',
+    ],
+    [
+        'blue-900',
+        'blue-800',
+        'blue-700',
+        'blue-600',
+        'blue-500',
+        'blue-400',
+    ],
+    [
+        'red-900',
+        'red-800',
+        'red-700',
+        'red-600',
+        'red-500',
+        'red-400',
+    ]
+
+]
+
 const dataFormatter = (number: number) =>
     `$ ${Intl.NumberFormat('us').format(number).toString()}`;
 
@@ -53,10 +82,21 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
     const [mode, setMode] = useState<"pie" | "donut">("pie");
     const [isBig, setBig] = useState<boolean>(false);
 
+
     const genRef = useRef(generator());
     const gen = genRef.current;
 
+    const colors = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'];
+    const shades = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'];
 
+    // Iterate over colors and shades to create strings
+    const strings: string[] = [];
+    colors.forEach(color => {
+        shades.forEach(shade => {
+            const string = `${color}-${shade}`;
+            strings.push(string);
+        });
+    });
 
     const captureElementAndDownload = () => {
         var elementId = 'downloadable';
@@ -75,33 +115,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
         });
     };
 
-    const palettes = [
-        [
-            'green-900',
-            'green-800',
-            'green-700',
-            'green-600',
-            'green-500',
-            'green-400',
-        ],
-        [
-            'blue-900',
-            'blue-800',
-            'blue-700',
-            'blue-600',
-            'blue-500',
-            'blue-400',
-        ],
-        [
-            'red-900',
-            'red-800',
-            'red-700',
-            'red-600',
-            'red-500',
-            'red-400',
-        ]
 
-    ]
 
     function* generator(): Generator<string[]> {
         let index = 0;
@@ -111,7 +125,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
             console.log(palettes[index]);
         }
     }
-    const [palette, setPalette] = useState<string[]>(() => gen.next().value)
+    const [palette, setPalette] = useState<string[]>(palettes[0])
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -197,68 +211,119 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                     data={data}
                                     variant={mode}
                                     valueFormatter={dataFormatter}
-                                    onValueChange={(v) => console.log(v)}
+                                    onValueChange={(v: EventProps) => {
+                                        if (!v) return;
+                                        console.log(v.name)
+
+
+                                    }}
                                     colors={palette}
+                                    showTooltip={true}
                                 />}
                             </div>
                         </div>
-
                     </div>
 
-                    <motion.nav
-                        initial={false}
-                        animate={isOpen ? "open" : "closed"}
-                        className="menu absolute right-5 top-0 bottom-0"
-                    >
-                        <motion.button
-                            whileTap={{ scale: 0.97 }}
-                            onClick={() => setIsOpen(!isOpen)}
+                    <div className="menu mt-2 right-5 top-0 bottom-0 absolute flex">
+                        <motion.nav className='min-h-full'>
+                            <Popover>
+                                <PopoverTrigger asChild className='p-0'>
+                                    <Button variant='secondary' className='mr-1 p-0.5'><Icon size="sm" icon={RiPaletteFill} /></Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="">
+                                    <Card className="mx-auto max-w-md">
+                                        <TabGroup>
+                                            <TabList className="mt">
+                                                <Tab>Preset</Tab>
+                                                <Tab>Custom</Tab>
+                                            </TabList>
+                                            <TabPanels>
+                                                <TabPanel>
+                                                    {palettes.map(element => (
+                                                        <Button className={`bg-${element[0]} max-w-3.5`} onClick={() => setPalette(element)}></Button>
+
+                                                    ))}
+                                                </TabPanel>
+                                                <TabPanel className='flex flex-row'>
+                                                    {palette.map((element, id) => (
+                                                        <Popover key={id}>
+                                                            <PopoverTrigger asChild>
+                                                                <div className={`bg-${element} w-5 h-5`}></div>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent>
+                                                                <Card className='flex flex-col'>
+                                                                    {colors.map(color => (
+                                                                        <div key={color} className='flex flex-row'>
+                                                                            {shades.map(shade => (
+                                                                                <div
+                                                                                    key={`${color}-${shade}`}
+                                                                                    className={`bg-${color}-${shade} w-5 h-5`}
+                                                                                    onClick={() => {
+                                                                                        const newPalette = [...palette];
+                                                                                        newPalette[id] = `${color}-${shade}`;
+                                                                                        setPalette(newPalette);
+                                                                                    }}
+                                                                                ></div>
+                                                                            ))}
+                                                                        </div>
+                                                                    ))}
+                                                                </Card>
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                    ))}
+                                                </TabPanel>
+                                            </TabPanels>
+                                        </TabGroup>
+                                    </Card>
+
+
+                                </PopoverContent>
+                            </Popover>
+                        </motion.nav>
+                        <motion.nav className=''
+                            initial={false}
+                            animate={isOpen ? "open" : "closed"}
                         >
-                            Menu
-                            <motion.div
-                                variants={{
-                                    open: { rotate: 180 },
-                                    closed: { rotate: 0 }
-                                }}
-                                transition={{ duration: 0.2 }}
-                                style={{ originY: 0.55 }}
+
+                            <Button className='mt-0'
+                                onClick={() => setIsOpen(!isOpen)}
                             >
-                                <svg width="15" height="15" viewBox="0 0 20 20">
-                                    <path d="M0 7 L 20 7 L 10 16" />
-                                </svg>
-                            </motion.div>
-                        </motion.button>
-                        <motion.ul
-                            variants={{
-                                open: {
-                                    clipPath: "inset(0% 0% 0% 0% round 10px)",
-                                    transition: {
-                                        type: "spring",
-                                        bounce: 0,
-                                        duration: 0.7,
-                                        delayChildren: 0.3,
-                                        staggerChildren: 0.05
+                                <a>Menu</a>
+                            </Button>
+                            <motion.ul
+                                className='mt-1'
+                                variants={{
+                                    open: {
+                                        clipPath: "inset(0% 0% 0% 0% round 10px)",
+                                        transition: {
+                                            type: "spring",
+                                            bounce: 0,
+                                            duration: 0.7,
+                                            delayChildren: 0,
+                                            staggerChildren: 0.05
+                                        }
+                                    },
+                                    closed: {
+                                        clipPath: "inset(10% 50% 90% 50% round 10px)",
+                                        transition: {
+                                            type: "spring",
+                                            bounce: 0,
+                                            duration: 0.3
+                                        }
                                     }
-                                },
-                                closed: {
-                                    clipPath: "inset(10% 50% 90% 50% round 10px)",
-                                    transition: {
-                                        type: "spring",
-                                        bounce: 0,
-                                        duration: 0.3
-                                    }
-                                }
-                            }}
-                            style={{ pointerEvents: isOpen ? "auto" : "none" }}
-                        >
-                            <motion.li variants={itemVariants} onClick={() => setMode("pie")}><Icon size="sm" variant={mode == "pie" ? 'solid' : 'simple'} icon={RiCircleFill} /></motion.li>
-                            <motion.li variants={itemVariants} onClick={() => setMode("donut")}  ><Icon size="sm" variant={mode == "donut" ? 'solid' : 'simple'} icon={RiCircleLine} /></motion.li>
-                            <motion.li variants={itemVariants} ><Icon size="sm" icon={RiBarChart2Fill} /></motion.li>
-                            <motion.li variants={itemVariants} onClick={() => setPalette(gen.next().value)} ><Icon size="sm" icon={RiPaletteFill} /></motion.li>
-                            <motion.li variants={itemVariants} onClick={() => setBig(!isBig)}><Icon size="sm" icon={isBig ? RiCollapseDiagonal2Fill : RiExpandDiagonal2Fill} /></motion.li>
-                            <motion.li variants={itemVariants} onClick={() => captureElementAndDownload()}><Icon size="sm" icon={RiDownload2Line} /></motion.li>
-                        </motion.ul>
-                    </motion.nav>
+                                }}
+                                style={{ pointerEvents: isOpen ? "auto" : "none" }}
+                            >
+                                <motion.li variants={itemVariants} onClick={() => setMode("pie")}><Icon size="sm" variant={mode == "pie" ? 'solid' : 'simple'} icon={RiCircleFill} /></motion.li>
+                                <motion.li variants={itemVariants} onClick={() => setMode("donut")}  ><Icon size="sm" variant={mode == "donut" ? 'solid' : 'simple'} icon={RiCircleLine} /></motion.li>
+                                <motion.li variants={itemVariants} ><Icon size="sm" icon={RiBarChart2Fill} /></motion.li>
+                                <motion.li variants={itemVariants} onClick={() => setPalette(gen.next().value)} ><Icon size="sm" icon={RiPaletteFill} /></motion.li>
+                                <motion.li variants={itemVariants} onClick={() => setBig(!isBig)}><Icon size="sm" icon={isBig ? RiCollapseDiagonal2Fill : RiExpandDiagonal2Fill} /></motion.li>
+                                <motion.li variants={itemVariants} onClick={() => captureElementAndDownload()}><Icon size="sm" icon={RiDownload2Line} /></motion.li>
+                                <motion.li variants={itemVariants} ><Icon size="sm" icon={RiLayoutHorizontalLine} /></motion.li>
+                            </motion.ul>
+                        </motion.nav>
+                    </div>
 
 
                 </>
