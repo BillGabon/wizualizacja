@@ -1,6 +1,6 @@
 import { RiBarChart2Fill, RiCircleFill, RiCircleLine, RiCollapseDiagonal2Fill, RiDownload2Line, RiExpandDiagonal2Fill, RiLayoutHorizontalLine, RiPaletteFill } from '@remixicon/react';
 import './App.css';
-import { DonutChart, Icon, EventProps, Button, TabGroup, TabList, Tab, TabPanels, TabPanel, Card } from '@tremor/react';
+import { DonutChart, Icon, EventProps, Button, TabGroup, TabList, Tab, TabPanels, TabPanel, Card, TextInput } from '@tremor/react';
 import { Reorder, motion } from 'framer-motion';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
@@ -81,7 +81,12 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
     const [isOpen, setIsOpen] = useState(() => false);
     const [mode, setMode] = useState<"pie" | "donut">("pie");
     const [isBig, setBig] = useState<boolean>(false);
+    const [title, setTitle] = useState<string>("");
 
+
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setTitle(event.target.value)
+    }
 
     const genRef = useRef(generator());
     const gen = genRef.current;
@@ -89,7 +94,6 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
     const colors = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'];
     const shades = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'];
 
-    // Iterate over colors and shades to create strings
     const strings: string[] = [];
     colors.forEach(color => {
         shades.forEach(shade => {
@@ -146,7 +150,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
         open: {
             opacity: 1,
             y: 0,
-            transition: { type: "spring", stiffness: 300, damping: 24 }
+            transition: { stiffness: 300, damping: 24 }
         },
         closed: { opacity: 0, y: 20, transition: { duration: 0.2 } }
     };
@@ -170,32 +174,6 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                         removeItem(newItems, props.id);
                         props.setItems(newItems);
                     }}>
-                    <motion.svg
-                        className='px-3'
-                        width="100%"
-                        height="calc(width * 1)"
-                        viewBox="0 0 600 600"
-                        opacity='0'
-                        whileHover={{
-                            opacity: 1
-                        }
-                        }
-                    >
-                        <motion.line
-                            x1="100"
-                            y1="0"
-                            x2="500"
-                            y2="600"
-                            stroke="#ffffff"
-                            strokeWidth='50' />
-                        <motion.line
-                            x1="100"
-                            y1="600"
-                            x2="500"
-                            y2="0"
-                            stroke="#ffffff"
-                            strokeWidth='50' />
-                    </motion.svg>
                 </motion.div>
                 {!fileContent &&
                     <input type="file" onChange={handleFileChange} />
@@ -203,10 +181,19 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                 {fileContent && <>
                     <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
                         <div className="space-y-3 w-full">
-                            <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
-                                Lorem ipsum
-                            </span>
-                            <div className="flex justify-center h-full p-0">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+                                        {title || "click to change title"}
+                                    </span>
+                                </PopoverTrigger>
+                                <PopoverContent className='z-10'>
+                                    <Card className=''>
+                                        <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleChange} />
+                                    </Card>
+                                </PopoverContent>
+                            </Popover>
+                            <div className="flex justify-center h-full p-0 z-50">
                                 {<DonutChart className={isBig ? 'bigChart' : 'chart'}
                                     data={data}
                                     variant={mode}
@@ -233,7 +220,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                 <PopoverContent className="">
                                     <Card className="mx-auto max-w-md">
                                         <TabGroup>
-                                            <TabList className="mt">
+                                            <TabList className="">
                                                 <Tab>Preset</Tab>
                                                 <Tab>Custom</Tab>
                                             </TabList>
@@ -251,7 +238,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                                                 <div className={`bg-${element} w-5 h-5`}></div>
                                                             </PopoverTrigger>
                                                             <PopoverContent>
-                                                                <Card className='flex flex-col'>
+                                                                <Card className='flex flex-col border-t-8' decoration="top" decorationColor={palette[id]}>
                                                                     {colors.map(color => (
                                                                         <div key={color} className='flex flex-row'>
                                                                             {shades.map(shade => (
@@ -317,7 +304,6 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                 <motion.li variants={itemVariants} onClick={() => setMode("pie")}><Icon size="sm" variant={mode == "pie" ? 'solid' : 'simple'} icon={RiCircleFill} /></motion.li>
                                 <motion.li variants={itemVariants} onClick={() => setMode("donut")}  ><Icon size="sm" variant={mode == "donut" ? 'solid' : 'simple'} icon={RiCircleLine} /></motion.li>
                                 <motion.li variants={itemVariants} ><Icon size="sm" icon={RiBarChart2Fill} /></motion.li>
-                                <motion.li variants={itemVariants} onClick={() => setPalette(gen.next().value)} ><Icon size="sm" icon={RiPaletteFill} /></motion.li>
                                 <motion.li variants={itemVariants} onClick={() => setBig(!isBig)}><Icon size="sm" icon={isBig ? RiCollapseDiagonal2Fill : RiExpandDiagonal2Fill} /></motion.li>
                                 <motion.li variants={itemVariants} onClick={() => captureElementAndDownload()}><Icon size="sm" icon={RiDownload2Line} /></motion.li>
                                 <motion.li variants={itemVariants} ><Icon size="sm" icon={RiLayoutHorizontalLine} /></motion.li>
