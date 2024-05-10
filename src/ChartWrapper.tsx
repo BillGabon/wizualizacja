@@ -1,6 +1,6 @@
 import { RiBarChart2Fill, RiCircleFill, RiCircleLine, RiCollapseDiagonal2Fill, RiDownload2Line, RiExpandDiagonal2Fill, RiLayoutHorizontalLine, RiPaletteFill } from '@remixicon/react';
 import './App.css';
-import { DonutChart, Icon, EventProps, Button, TabGroup, TabList, Tab, TabPanels, TabPanel, Card, TextInput } from '@tremor/react';
+import { DonutChart, Icon, EventProps, Button, TabGroup, TabList, Tab, TabPanels, TabPanel, Card, TextInput, BarChart, BarList } from '@tremor/react';
 import { Reorder, motion } from 'framer-motion';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
@@ -80,6 +80,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
     const [fileContent, setFileContent] = useState<string>('');
     const [isOpen, setIsOpen] = useState(() => false);
     const [mode, setMode] = useState<"pie" | "donut">("pie");
+    const [chartType, setChartType] = useState<"circle" | "bar" | "barlist">("circle");
     const [isBig, setBig] = useState<boolean>(false);
     const [title, setTitle] = useState<string>("");
 
@@ -179,38 +180,106 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                     <input type="file" onChange={handleFileChange} />
                 }
                 {fileContent && <>
-                    <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
-                        <div className="space-y-3 w-full">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
-                                        {title || "click to change title"}
-                                    </span>
-                                </PopoverTrigger>
-                                <PopoverContent className='z-10'>
-                                    <Card className=''>
-                                        <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleChange} />
-                                    </Card>
-                                </PopoverContent>
-                            </Popover>
-                            <div className="flex justify-center h-full p-0 z-50">
-                                {<DonutChart className={isBig ? 'bigChart' : 'chart'}
-                                    data={data}
-                                    variant={mode}
-                                    valueFormatter={dataFormatter}
-                                    onValueChange={(v: EventProps) => {
-                                        if (!v) return;
-                                        console.log(v.name)
+                    {
+                        chartType == "circle" &&
+                        <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
+                            <div className="space-y-3 w-full">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+                                            {title || "click to change title"}
+                                        </span>
+                                    </PopoverTrigger>
+                                    <PopoverContent className='z-10'>
+                                        <Card className=''>
+                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleChange} />
+                                        </Card>
+                                    </PopoverContent>
+                                </Popover>
+                                <div className="flex justify-center h-full p-0 z-50">
+                                    {<DonutChart className={isBig ? 'bigChart' : 'chart'}
+                                        data={data}
+                                        variant={mode}
+                                        valueFormatter={dataFormatter}
+                                        onValueChange={(v: EventProps) => {
+                                            if (!v) return;
+                                            console.log(v.name)
 
 
-                                    }}
-                                    colors={palette}
-                                    showTooltip={true}
-                                />}
+                                        }}
+                                        colors={palette}
+                                        showTooltip={true}
+                                    />}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    }
 
+                    {chartType == "bar" &&
+                        <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
+                            <div className="space-y-3 w-full">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+                                            {title || "click to change title"}
+                                        </span>
+                                    </PopoverTrigger>
+                                    <PopoverContent className='z-10'>
+                                        <Card className=''>
+                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleChange} />
+                                        </Card>
+                                    </PopoverContent>
+                                </Popover>
+                                <div className="flex justify-center">
+                                    {<BarChart className={isBig ? 'bigChart' : 'chart'}
+                                        data={data}
+                                        categories={['value']}
+                                        index='name'
+                                        valueFormatter={dataFormatter}
+                                        onValueChange={(v: EventProps) => {
+                                            if (!v) return;
+                                            console.log(v.name)
+
+
+                                        }}
+                                        colors={palette}
+                                        showTooltip={true}
+                                    />}
+                                </div>
+                            </div>
+                        </div>}
+                    {chartType == "barlist" &&
+                        <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
+                            <div className="space-y-3 w-full">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+                                            {title || "click to change title"}
+                                        </span>
+                                    </PopoverTrigger>
+                                    <PopoverContent className='z-10'>
+                                        <Card className=''>
+                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleChange} />
+                                        </Card>
+                                    </PopoverContent>
+                                </Popover>
+                                <div className="flex justify-center min-w-max">
+                                    {<BarList className={isBig ? 'bigChart' : 'chart'}
+                                        data={data}
+                                        categories={['value']}
+                                        index='name'
+                                        valueFormatter={dataFormatter}
+                                        onValueChange={(v: EventProps) => {
+                                            if (!v) return;
+                                            console.log(v.name)
+
+
+                                        }}
+                                        colors={palette}
+                                    />}
+                                </div>
+                            </div>
+                        </div>}
                     <div className="menu mt-2 right-5 top-0 bottom-0 absolute flex">
                         <motion.nav className='min-h-full'>
                             <Popover>
@@ -301,9 +370,22 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                 }}
                                 style={{ pointerEvents: isOpen ? "auto" : "none" }}
                             >
-                                <motion.li variants={itemVariants} onClick={() => setMode("pie")}><Icon size="sm" variant={mode == "pie" ? 'solid' : 'simple'} icon={RiCircleFill} /></motion.li>
-                                <motion.li variants={itemVariants} onClick={() => setMode("donut")}  ><Icon size="sm" variant={mode == "donut" ? 'solid' : 'simple'} icon={RiCircleLine} /></motion.li>
-                                <motion.li variants={itemVariants} ><Icon size="sm" icon={RiBarChart2Fill} /></motion.li>
+                                <motion.li variants={itemVariants} onClick={() => {
+                                    setMode("pie")
+                                    setChartType("circle");
+                                }}><Icon size="sm" variant={mode == "pie" ? 'solid' : 'simple'} icon={RiCircleFill} /></motion.li>
+                                <motion.li variants={itemVariants} onClick={() => {
+                                    setMode("donut")
+                                    setChartType("circle")
+                                }}  ><Icon size="sm" variant={mode == "donut" ? 'solid' : 'simple'} icon={RiCircleLine} /></motion.li>
+                                <motion.li variants={itemVariants} onClick={() => {
+                                    setMode("donut")
+                                    setChartType("bar")
+                                }}><Icon size="sm" icon={RiBarChart2Fill} /></motion.li>
+                                <motion.li variants={itemVariants} onClick={() => {
+                                    setMode("donut")
+                                    setChartType("barlist")
+                                }}><Icon size="sm" icon={RiBarChart2Fill} /></motion.li>
                                 <motion.li variants={itemVariants} onClick={() => setBig(!isBig)}><Icon size="sm" icon={isBig ? RiCollapseDiagonal2Fill : RiExpandDiagonal2Fill} /></motion.li>
                                 <motion.li variants={itemVariants} onClick={() => captureElementAndDownload()}><Icon size="sm" icon={RiDownload2Line} /></motion.li>
                                 <motion.li variants={itemVariants} ><Icon size="sm" icon={RiLayoutHorizontalLine} /></motion.li>
