@@ -2,9 +2,10 @@ import { RiBarChart2Fill, RiCircleFill, RiCircleLine, RiCollapseDiagonal2Fill, R
 import './App.css';
 import { DonutChart, Icon, EventProps, Button, TabGroup, TabList, Tab, TabPanels, TabPanel, Card, TextInput, BarChart, BarList } from '@tremor/react';
 import { Reorder, motion } from 'framer-motion';
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
+import handleData from './handleData';
 
 export interface WrapperProps {
     id: number;
@@ -13,32 +14,13 @@ export interface WrapperProps {
     setItems: React.Dispatch<React.SetStateAction<number[]>>
 }
 
-const data = [
-    {
-        name: 'Noche Holding AG',
-        value: 9800,
-    },
-    {
-        name: 'Rain Drop AG',
-        value: 4567,
-    },
-    {
-        name: 'Push Rail AG',
-        value: 3908,
-    },
-    {
-        name: 'Flow Steal AG',
-        value: 2400,
-    },
-    {
-        name: 'Tiny Loop Inc.',
-        value: 2174,
-    },
-    {
-        name: 'Anton Resorts Holding',
-        value: 1398,
-    },
-];
+function concatenateArray(arr: any[]): any[] {
+    const concatenatedArray: any[] = arr;
+    for (let i = 0; i < 5; i++) {
+        concatenatedArray.push(...arr.slice(0, 5));
+    }
+    return concatenatedArray;
+}
 
 const palettes = [
     [
@@ -69,7 +51,7 @@ const palettes = [
 ]
 
 const dataFormatter = (number: number) =>
-    `$ ${Intl.NumberFormat('us').format(number).toString()}`;
+    `${Intl.NumberFormat('us').format(number).toString()}`;
 
 function removeItem<T>(arr: T[], item: T) {
     const index = arr.indexOf(item);
@@ -77,20 +59,19 @@ function removeItem<T>(arr: T[], item: T) {
 }
 
 const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: any) {
-    const [fileContent, setFileContent] = useState<string>('');
+    const [fileContent, setFileContent] = useState<File>();
+    const [data, setdata] = useState<any>()
     const [isOpen, setIsOpen] = useState(() => false);
     const [mode, setMode] = useState<"pie" | "donut">("pie");
     const [chartType, setChartType] = useState<"circle" | "bar" | "barlist">("circle");
     const [isBig, setBig] = useState<boolean>(false);
     const [title, setTitle] = useState<string>("");
+    const [currentIcon, setCurrentIcon] = useState<string>()
 
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setTitle(event.target.value)
     }
-
-    const genRef = useRef(generator());
-    const gen = genRef.current;
 
     const colors = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'];
     const shades = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'];
@@ -120,32 +101,23 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
         });
     };
 
+    const [palette, setPalette] = useState<string[]>(concatenateArray(palettes[0]))
 
-
-    function* generator(): Generator<string[]> {
-        let index = 0;
-        while (true) {
-            yield palettes[index];
-            index = (index + 1) % palettes.length
-            console.log(palettes[index]);
-        }
-    }
-    const [palette, setPalette] = useState<string[]>(palettes[0])
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const content = e.target?.result as string;
-                setFileContent(content);
-            };
-            reader.readAsText(file);
+
+                setFileContent(file);
+                try {
+                const gotData = await handleData(file)
+                setdata(gotData);
+                }
+                catch(error) {
+                    setFileContent(undefined)
+                    console.log(error)
+                }
         }
     }
-    useEffect(() => {
-        setPalette(gen.next().value);
-    }, [gen]);
 
     const itemVariants = {
         open: {
@@ -177,7 +149,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                     }}>
                 </motion.div>
                 {!fileContent &&
-                    <input type="file" onChange={handleFileChange} />
+                    <input type="file" accept=".xls, .xlsx" onChange={handleFileChange} />
                 }
                 {fileContent && <>
                     {
@@ -296,12 +268,12 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                             <TabPanels>
                                                 <TabPanel>
                                                     {palettes.map(element => (
-                                                        <Button className={`bg-${element[0]} max-w-3.5`} onClick={() => setPalette(element)}></Button>
+                                                        <Button className={`bg-${element[0]} max-w-3.5`} onClick={() => setPalette(concatenateArray(element))}></Button>
 
                                                     ))}
                                                 </TabPanel>
                                                 <TabPanel className='flex flex-row'>
-                                                    {palette.map((element, id) => (
+                                                    {palette.slice(0, 5).map((element, id) => (
                                                         <Popover key={id}>
                                                             <PopoverTrigger asChild>
                                                                 <div className={`bg-${element} w-5 h-5`}></div>
@@ -315,9 +287,9 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                                                                     key={`${color}-${shade}`}
                                                                                     className={`bg-${color}-${shade} w-5 h-5`}
                                                                                     onClick={() => {
-                                                                                        const newPalette = [...palette];
+                                                                                        const newPalette = [...palette.slice(0, 5)];
                                                                                         newPalette[id] = `${color}-${shade}`;
-                                                                                        setPalette(newPalette);
+                                                                                        setPalette(concatenateArray(newPalette));
                                                                                     }}
                                                                                 ></div>
                                                                             ))}
@@ -373,19 +345,21 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                 <motion.li variants={itemVariants} onClick={() => {
                                     setMode("pie")
                                     setChartType("circle");
-                                }}><Icon size="sm" variant={mode == "pie" ? 'solid' : 'simple'} icon={RiCircleFill} /></motion.li>
+                                    setCurrentIcon("pie")
+                                }}><Icon size="sm" variant={currentIcon == "pie" ? 'solid' : 'simple'} icon={RiCircleFill} /></motion.li>
                                 <motion.li variants={itemVariants} onClick={() => {
                                     setMode("donut")
                                     setChartType("circle")
-                                }}  ><Icon size="sm" variant={mode == "donut" ? 'solid' : 'simple'} icon={RiCircleLine} /></motion.li>
+                                    setCurrentIcon("donut")
+                                }}  ><Icon size="sm" variant={currentIcon == "donut" ? 'solid' : 'simple'} icon={RiCircleLine} /></motion.li>
                                 <motion.li variants={itemVariants} onClick={() => {
-                                    setMode("donut")
                                     setChartType("bar")
-                                }}><Icon size="sm" icon={RiBarChart2Fill} /></motion.li>
+                                    setCurrentIcon("bar")
+                                }}><Icon size="sm" variant={currentIcon == "bar" ? 'solid' : 'simple'} icon={RiBarChart2Fill} /></motion.li>
                                 <motion.li variants={itemVariants} onClick={() => {
-                                    setMode("donut")
                                     setChartType("barlist")
-                                }}><Icon size="sm" icon={RiBarChart2Fill} /></motion.li>
+                                    setCurrentIcon("barlist")
+                                }}><Icon size="sm" variant={currentIcon == "barlist" ? 'solid' : 'simple'} icon={RiBarChart2Fill} /></motion.li>
                                 <motion.li variants={itemVariants} onClick={() => setBig(!isBig)}><Icon size="sm" icon={isBig ? RiCollapseDiagonal2Fill : RiExpandDiagonal2Fill} /></motion.li>
                                 <motion.li variants={itemVariants} onClick={() => captureElementAndDownload()}><Icon size="sm" icon={RiDownload2Line} /></motion.li>
                                 <motion.li variants={itemVariants} ><Icon size="sm" icon={RiLayoutHorizontalLine} /></motion.li>

@@ -27,6 +27,19 @@ function App() {
 </Popover>
 
 <Popover>
+  <PopoverTrigger asChild><Button size='xs' variant='primary' className='px-4 py-2 mx-1'>Change Password</Button></PopoverTrigger>
+  <PopoverContent>
+    <Card className='mt-2'>
+    <TextInput type='password' placeholder="password" className='my-2'></TextInput>
+    <TextInput type='password' className='my-2' placeholder='new password'></TextInput>
+    <TextInput type='password' className='my-2' placeholder='new password'></TextInput>
+    <div className='mb-1 flex flex-row-reverse'><Button size='xs' variant='primary' className='px-4 py-1'>Change</Button>
+    </div>
+    </Card>
+  </PopoverContent>
+</Popover>
+
+<Popover>
   <PopoverTrigger asChild><Button size='xs' variant='primary' className='px-4 py-2 mx-2'>Login</Button></PopoverTrigger>
   <PopoverContent>
     <Card className='mt-2'>
@@ -50,7 +63,7 @@ function App() {
             setItems([...items, count.current]);
           }}
         >
-          Add item
+          Add Item
         </motion.button>
       </div>
 
