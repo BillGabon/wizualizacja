@@ -1,17 +1,16 @@
-import { RiBarChart2Fill, RiBarChartHorizontalFill, RiBubbleChartFill, RiCollapseDiagonal2Fill, RiDonutChartFill, RiDownload2Line, RiExpandDiagonal2Fill, RiFolderUploadFill, RiHammerFill, RiLayoutHorizontalLine, RiPaletteFill, RiPieChartBoxFill, RiPieChartFill } from '@remixicon/react';
+import { RiBarChart2Fill, RiBarChartHorizontalFill, RiBubbleChartFill, RiCollapseDiagonal2Fill, RiDonutChartFill, RiDownload2Line, RiExpandDiagonal2Fill, RiFolderUploadFill, RiHammerFill, RiPaletteFill, RiPieChartBoxFill, RiPieChartFill } from '@remixicon/react';
 import './App.css';
 import { DonutChart, Icon, EventProps, Button, TabGroup, TabList, Tab, TabPanels, TabPanel, Card, TextInput, BarChart,   BarList,  
     MultiSelect,
     MultiSelectItem,
     Select,
     SelectItem,
-    ScatterChart,
-   }                        from '@tremor/react';
+    ScatterChart,        } from '@tremor/react';
 import { Reorder, motion } from 'framer-motion';
 import { forwardRef, useEffect, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
-import handleExcel from './handleExcel';
+import handleExcel from '../functions/handleExcel';
 
 interface storedChart {
     data: JSON;
@@ -38,7 +37,7 @@ export interface WrapperProps {
 function concatenateArray(arr: any[]): any[] {
     const concatenatedArray: any[] = arr;
     for (let i = 0; i < 5; i++) {
-        concatenatedArray.push(...arr.slice(0, 4));
+        concatenatedArray.push(...arr.slice(0, 5));
     }
     return concatenatedArray;
 }
@@ -52,7 +51,6 @@ const palettes = [
         'green-700',
         'green-600',
         'green-500',
-        'green-400',
     ],
     [
         'blue-900',
@@ -60,7 +58,6 @@ const palettes = [
         'blue-700',
         'blue-600',
         'blue-500',
-        'blue-400',
     ],
     [
         'red-900',
@@ -68,7 +65,6 @@ const palettes = [
         'red-700',
         'red-600',
         'red-500',
-        'red-400',
     ]
 
 ]
@@ -79,8 +75,10 @@ function removeItem<T>(arr: T[], item: T) {
 }
 
 const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: any) {
-    const [rawFile, setRawFile] = useState<File>();
-    const [data, setdata] = useState<any>()
+
+    console.log(ref)
+
+    const [data, setData] = useState<any>()
     const [mode, setMode] = useState<"pie" | "donut">("pie");
     const [chartType, setChartType] = useState<"circle" | "bar" | "barlist" | "scatterchart">("circle");
     const [isBig, setBig] = useState<boolean>(false);
@@ -97,8 +95,6 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
         setTitle(event.target.value)
     }
 
-
-
     const storeChart = () => {
         const chart: storedChart = {
             data: data,
@@ -108,7 +104,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
             firstKey: firstKey,
             secondKey: secondKey,
             thirdKey: thirdKey,
-            palette: palette,
+            palette: palette.slice(0, 5),
             chartType: chartType
         }
         return JSON.stringify(chart);
@@ -117,7 +113,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
 
 const unpackChart = (chartData: string): void => {
     const chart = JSON.parse(chartData) as storedChart
-    setdata(chart.data)
+    setData(chart.data)
     setBig(chart.isBig)
     setCurrentIcon(chart.currentIcon)
     setKeys(chart.keys)
@@ -168,17 +164,15 @@ const unpackChart = (chartData: string): void => {
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-
-                setRawFile(file);
                 try {
                 const [gotData, gotKeys] = await handleExcel(file)
-                setdata(gotData)
+                setData(gotData)
                 setKeys(gotKeys)
 
                 }
                 catch(error) {
-                    setRawFile(undefined)
                     console.log(error)
+                    setData(undefined)
                 }
         }
     }
@@ -199,14 +193,7 @@ const unpackChart = (chartData: string): void => {
 
                     {/* close item red rectangle */}
 
-                <motion.div className="absolute left-0 top-0 bottom-0 bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity transition-width w-1/12 overflow-hidden rounded-l origin-left"
-                    whileHover={{
-                        scaleX: 1.5,
-                        type: 'easeOut',
-                        transition: { duration: 0.1 },
-                        overflowY: 'hidden'
-                    }}
-
+                <motion.div className="absolute left-0 top-0 bottom-0 bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity w-1/12 max-w-10 overflow-hidden rounded-l origin-left"
                     onClick={() => {
                         const newItems = [...props.items];
                         removeItem(newItems, props.id);
@@ -270,7 +257,7 @@ const unpackChart = (chartData: string): void => {
                                         </Card>
                                     </PopoverContent>
                                 </Popover>
-                                <div className="flex justify-center">
+                                <div className="ml-10 flex justify-center">
                                     {<BarChart className={isBig ? 'bigChart' : 'chart'}
                                         data={data}
                                         categories={[secondKey, thirdKey]}
@@ -303,16 +290,13 @@ const unpackChart = (chartData: string): void => {
                 </PopoverContent>
             </Popover>
             <div className="flex justify-start w-full">
-                {<BarList className="ml-1/5 w-4/5"
+                {<BarList className="ml-10 w-4/5"
                     data={data}
                     color={palette[0]}
-                    categories={secondKey} //disregard
-                    index='name'
                     onValueChange={(v: EventProps) => {
                         if (!v) return;
                         console.log(v.name)
                     }}
-                    colors={palette}
                 />}
             </div>
         </div>
@@ -340,9 +324,9 @@ const unpackChart = (chartData: string): void => {
                                         category={firstKey}
                                         x={secondKey}
                                         y={thirdKey}
-                                        showOpacity={true}
-                                        autoMinXValue={true}
-                                        autoMinYValue={true}
+                                        showOpacity
+                                        autoMinXValue
+                                        autoMinYValue
                                         showLegend={false}
                                         onValueChange={(v: EventProps) => {
                                             if (!v) return;
@@ -356,14 +340,14 @@ const unpackChart = (chartData: string): void => {
                                 </div>
                             </div>
                         </div>}
-                    <div className="menu mt-2 right-5 top-0 bottom-0 absolute flex">
-                        <motion.nav className='min-h-full overflow-visible'>
+                    <div className="menu mt-2 right-5 top-0 bottom-0 absolute flex h-auto max-h-2">
+                        <motion.nav className='overflow-visible'>
                             {/* color selection */}
                             <Popover>
                                 <PopoverTrigger asChild className='p-0'>
                                     <Button variant='secondary' className='mr-1 p-0.5'><Icon size="sm" icon={RiPaletteFill} /></Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="">
+                                <PopoverContent className="z-50">
                                     <Card className="mx-auto max-w-md">
                                         <TabGroup className='z-50'>
                                             <TabList className="">
@@ -392,9 +376,9 @@ const unpackChart = (chartData: string): void => {
                                                                                     key={`${color}-${shade}`}
                                                                                     className={`bg-${color}-${shade} w-5 h-5`}
                                                                                     onClick={() => {
-                                                                                        const newPalette = [...palette.slice(0, 5)];
+                                                                                        const newPalette = [...palette];
                                                                                         newPalette[id] = `${color}-${shade}`;
-                                                                                        setPalette(concatenateArray(newPalette));
+                                                                                        setPalette(concatenateArray(newPalette.slice(0, 5)));
                                                                                     }}
                                                                                 ></div>
                                                                             ))}
@@ -435,6 +419,7 @@ const unpackChart = (chartData: string): void => {
                                                 </SelectItem>
                                             ))}
                                         </Select>
+                                        { chartType != 'circle' && chartType != 'barlist' && <>
                                         <div className="mb-2 mt-2 text-center font-mono text-sm text-slate-500"> Data 2 </div>
                                         <Select value={thirdKey} onValueChange={(value) => setThirdKey(value)}>
                                             {keys && keys.map((item: string) => (
@@ -443,6 +428,7 @@ const unpackChart = (chartData: string): void => {
                                                 </SelectItem>
                                             ))}
                                         </Select>
+                                        </> }
                                     </Card>
                                 </PopoverContent>
                             </Popover>

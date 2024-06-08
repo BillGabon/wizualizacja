@@ -1,22 +1,23 @@
 import './App.css';
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, Reorder, motion } from 'framer-motion';
-import ChartWrapper from './ChartWrapper';
+import ChartWrapper from './components/ChartWrapper';
 import { Button, Card, TextInput, Icon } from '@tremor/react';
 import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
-import axios from 'axios'
+import axios from 'axios';
 import { RiFolder2Fill } from '@remixicon/react';
+
+const serverAdress: string = 'http://localhost:5000'
 
 type User = {
   email: string;
 };
 
 function App() {
-
-
   const count = useRef(0);
   const [items, setItems] = useState<number[]>([0]);
   const [loggedId, setLoggedId] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const emailRef = useRef<HTMLInputElement>(null);
@@ -27,46 +28,48 @@ function App() {
   const newPasswordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
-
   useEffect(() => {
-    if(error) {
-      alert(error)
+    if (error) {
+      alert(error);
     }
-    setError(null)
-  }), [error]
+    setError(null);
+  }, [error]);
 
   const uploadChart = async (data: string) => {
     try {
-      await axios.post('http://localhost:5000/api/upload-chart', { data });
-
+      if (!token) throw new Error("No token found");
+      await axios.post(`${serverAdress}/api/upload-chart`, { data }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     } catch (error) {
-      setError('Upload failed');
+      setError("Upload failed");
     }
   };
-
-
 
   const handleSignup = async () => {
     if (emailRef.current && passwordRef.current) {
       const email = emailRef.current.value;
-      const password = passwordRef.current.value;
+      const password = emailRef.current.value;
       try {
-        const response = await axios.post('http://localhost:5000/api/signup', { email, password });
+        const response = await axios.post(`${serverAdress}/api/signup`, { email, password });
         setLoggedId(response.data.user);
+        setToken(response.data.token);
       } catch (error) {
         setError('Signup failed');
       }
     }
   };
 
-
   const handleLogin = async () => {
     if (loginEmailRef.current && loginPasswordRef.current) {
       const email = loginEmailRef.current.value;
       const password = loginPasswordRef.current.value;
       try {
-        const response = await axios.post('http://localhost:5000/api/login', { email, password });
+        const response = await axios.post(`${serverAdress}/api/login`, { email, password });
         setLoggedId(response.data.user);
+        setToken(response.data.token);
       } catch (error) {
         setError('Login failed');
       }
@@ -75,20 +78,19 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('http://localhost:5000/api/logout');
+      await axios.post(`${serverAdress}/logout`);
       setLoggedId(null);
+      setToken(null);
     } catch (error) {
       setError('Logout failed');
     }
   };
 
-  const ref = useRef({ value: null });
 
-
+  const ref = useRef({value: null})
   return (
     <>
-
-<nav className="w-full p-4 mb-1 flex flex-row-reverse">
+      <nav className="w-full p-4 mb-1 flex flex-row-reverse">
         {!loggedId && <Popover>
           <PopoverTrigger asChild>
             <Button size='xs' variant='primary' className='px-4 py-2 mx-1'>Register</Button>
@@ -109,9 +111,9 @@ function App() {
           </PopoverTrigger>
           <PopoverContent>
             <Card className='mt-2'>
-              <TextInput type='password' placeholder="password" className='my-2' ref={oldPasswordRef} />
+              <TextInput type='password' placeholder="old password" className='my-2' ref={oldPasswordRef} />
               <TextInput type='password' className='my-2' placeholder='new password' ref={newPasswordRef} />
-              <TextInput type='password' className='my-2' placeholder='new password' ref={confirmPasswordRef} />
+              <TextInput type='password' className='my-2' placeholder='confirm new password' ref={confirmPasswordRef} />
               <div className='mb-1 flex flex-row-reverse'>
                 <Button size='xs' variant='primary' className='px-4 py-1'>Change</Button>
               </div>
@@ -143,8 +145,8 @@ function App() {
           </PopoverContent>
           </Popover>}
       </nav>
-                          {/* add item button */}
 
+      {/* Add item button */}
       <div className='justify-center flex'>
         <motion.button className='rounded-md bg-rose-500 text-white p-3 self-center mb-3'
           whileTap={{ scale: 0.95 }}
@@ -156,10 +158,10 @@ function App() {
           Add Item
         </motion.button>
       </div>
-                            {/* items */}
 
+      {/* Items */}
       <Reorder.Group axis="y" values={items} onReorder={setItems}>
-        <AnimatePresence mode='popLayout' >
+        <AnimatePresence mode='popLayout'>
           {items.map((id) => (
             <ChartWrapper ref={ref} key={id} id={id} count={count} items={items} setItems={setItems} chartToShow={null} uploadChart={uploadChart} />
           ))}

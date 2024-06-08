@@ -1,14 +1,15 @@
 import * as XLSX from 'xlsx';
 import extractKeys from './extractKeys';
 
+
 interface DataInterface {
   [key: string]: string | number;
 }
 
 /**
- * 
+ * transforms Excel file into an array usable by Tremor charts  
  * @param file Excel file
- * @returns [formatted data, array of keys as strings]
+ * @returns [transformed data, array of keys as strings]
  */
 
 const handleExcel = async (file: File): Promise<[DataInterface[], string[]]> => {
@@ -26,7 +27,6 @@ const handleExcel = async (file: File): Promise<[DataInterface[], string[]]> => 
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json<any>(firstSheet);
-
         const formattedData: DataInterface[] = jsonData.map((item: any) => ({
           ...item,
         }));
