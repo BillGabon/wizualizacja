@@ -1,26 +1,49 @@
-import { RiBarChart2Fill, RiCircleFill, RiCircleLine, RiCollapseDiagonal2Fill, RiDownload2Line, RiExpandDiagonal2Fill, RiLayoutHorizontalLine, RiPaletteFill } from '@remixicon/react';
+import { RiBarChart2Fill, RiBarChartHorizontalFill, RiBubbleChartFill, RiCollapseDiagonal2Fill, RiDonutChartFill, RiDownload2Line, RiExpandDiagonal2Fill, RiFolderUploadFill, RiHammerFill, RiLayoutHorizontalLine, RiPaletteFill, RiPieChartBoxFill, RiPieChartFill } from '@remixicon/react';
 import './App.css';
-import { DonutChart, Icon, EventProps, Button, TabGroup, TabList, Tab, TabPanels, TabPanel, Card, TextInput, BarChart, BarList } from '@tremor/react';
+import { DonutChart, Icon, EventProps, Button, TabGroup, TabList, Tab, TabPanels, TabPanel, Card, TextInput, BarChart,   BarList,  
+    MultiSelect,
+    MultiSelectItem,
+    Select,
+    SelectItem,
+    ScatterChart,
+   }                        from '@tremor/react';
 import { Reorder, motion } from 'framer-motion';
-import { forwardRef, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
-import handleData from './handleData';
+import handleExcel from './handleExcel';
+
+interface storedChart {
+    data: JSON;
+    isBig: boolean;
+    currentIcon: any;
+    keys: any;
+    firstKey: any;
+    secondKey: any;
+    thirdKey: any;
+    palette: string[];
+    chartType: "circle" | "bar" | "barlist" | "scatterchart";
+
+}
 
 export interface WrapperProps {
     id: number;
     count: React.MutableRefObject<number>;
     items: number[];
     setItems: React.Dispatch<React.SetStateAction<number[]>>
+    chartToShow: string | null
+    uploadChart(data: string): Promise<void>
 }
 
 function concatenateArray(arr: any[]): any[] {
     const concatenatedArray: any[] = arr;
     for (let i = 0; i < 5; i++) {
-        concatenatedArray.push(...arr.slice(0, 5));
+        concatenatedArray.push(...arr.slice(0, 4));
     }
     return concatenatedArray;
 }
+
+        /* ready color schemes */
 
 const palettes = [
     [
@@ -50,28 +73,65 @@ const palettes = [
 
 ]
 
-const dataFormatter = (number: number) =>
-    `${Intl.NumberFormat('us').format(number).toString()}`;
-
 function removeItem<T>(arr: T[], item: T) {
     const index = arr.indexOf(item);
     if (index > -1) arr.splice(index, 1);
 }
 
 const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: any) {
-    const [fileContent, setFileContent] = useState<File>();
+    const [rawFile, setRawFile] = useState<File>();
     const [data, setdata] = useState<any>()
-    const [isOpen, setIsOpen] = useState(() => false);
     const [mode, setMode] = useState<"pie" | "donut">("pie");
-    const [chartType, setChartType] = useState<"circle" | "bar" | "barlist">("circle");
+    const [chartType, setChartType] = useState<"circle" | "bar" | "barlist" | "scatterchart">("circle");
     const [isBig, setBig] = useState<boolean>(false);
     const [title, setTitle] = useState<string>("");
     const [currentIcon, setCurrentIcon] = useState<string>()
 
 
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const [keys, setKeys] = useState<any>()
+    const [firstKey, setFirstKey] = useState<any>()
+    const [secondKey, setSecondKey] = useState<any>()
+    const [thirdKey, setThirdKey] = useState<any>()
+
+    const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setTitle(event.target.value)
     }
+
+
+
+    const storeChart = () => {
+        const chart: storedChart = {
+            data: data,
+            isBig: isBig,
+            currentIcon: currentIcon,
+            keys: keys,
+            firstKey: firstKey,
+            secondKey: secondKey,
+            thirdKey: thirdKey,
+            palette: palette,
+            chartType: chartType
+        }
+        return JSON.stringify(chart);
+    }
+
+
+const unpackChart = (chartData: string): void => {
+    const chart = JSON.parse(chartData) as storedChart
+    setdata(chart.data)
+    setBig(chart.isBig)
+    setCurrentIcon(chart.currentIcon)
+    setKeys(chart.keys)
+    setFirstKey(chart.firstKey)
+    setSecondKey(chart.secondKey)
+    setThirdKey(chart.thirdKey)
+    setPalette(chart.palette)
+    setChartType(chart.chartType)
+}
+    if(props.chartToShow != null) {
+        unpackChart(props.chartToShow)
+    }
+
+    {/* create an array of colors */}
 
     const colors = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'];
     const shades = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'];
@@ -83,6 +143,8 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
             strings.push(string);
         });
     });
+
+    /* handle image downloading */
 
     const captureElementAndDownload = () => {
         var elementId = 'downloadable';
@@ -101,39 +163,42 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
         });
     };
 
-    const [palette, setPalette] = useState<string[]>(concatenateArray(palettes[0]))
+    const [palette, setPalette] = useState<string[]>(concatenateArray(palettes[0])) //current color scheme
 
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
 
-                setFileContent(file);
+                setRawFile(file);
                 try {
-                const gotData = await handleData(file)
-                setdata(gotData);
+                const [gotData, gotKeys] = await handleExcel(file)
+                setdata(gotData)
+                setKeys(gotKeys)
+
                 }
                 catch(error) {
-                    setFileContent(undefined)
+                    setRawFile(undefined)
                     console.log(error)
                 }
         }
     }
 
-    const itemVariants = {
-        open: {
-            opacity: 1,
-            y: 0,
-            transition: { stiffness: 300, damping: 24 }
-        },
-        closed: { opacity: 0, y: 20, transition: { duration: 0.2 } }
-    };
-
+    useEffect(() => {
+        if (keys && keys.length > 1) {
+            firstKey && setFirstKey(keys[0]);
+            secondKey && setSecondKey(keys[1]);
+            thirdKey && setThirdKey(keys[2])
+        }
+    }, [keys]);
 
     return (
 
         <>
-            < Reorder.Item value={props.id} layout style={{}} className={`rounded-md p-3 mb-2 group relative bg-white ${isBig ? 'bigTitle' : 'tile'}`} animate={{ scale: 1, opacity: 1 }}
+            < Reorder.Item value={props.id} layout style={{}} className={`rounded-md p-3 mb-2 group relative bg-white ${isBig ? 'bigTile' : 'tile'}`} animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.1, opacity: 0 }} >
+
+                    {/* close item red rectangle */}
+
                 <motion.div className="absolute left-0 top-0 bottom-0 bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity transition-width w-1/12 overflow-hidden rounded-l origin-left"
                     whileHover={{
                         scaleX: 1.5,
@@ -147,11 +212,14 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                         removeItem(newItems, props.id);
                         props.setItems(newItems);
                     }}>
+
                 </motion.div>
-                {!fileContent &&
+                {!data &&
                     <input type="file" accept=".xls, .xlsx" onChange={handleFileChange} />
                 }
-                {fileContent && <>
+
+                            {/* charts */}
+                {data && <>
                     {
                         chartType == "circle" &&
                         <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
@@ -164,20 +232,20 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                     </PopoverTrigger>
                                     <PopoverContent className='z-10'>
                                         <Card className=''>
-                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleChange} />
+                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleTitleChange} />
                                         </Card>
                                     </PopoverContent>
                                 </Popover>
                                 <div className="flex justify-center h-full p-0 z-50">
                                     {<DonutChart className={isBig ? 'bigChart' : 'chart'}
                                         data={data}
+                                        index={firstKey}
+                                        label={firstKey}
+                                        category={secondKey}
                                         variant={mode}
-                                        valueFormatter={dataFormatter}
                                         onValueChange={(v: EventProps) => {
                                             if (!v) return;
                                             console.log(v.name)
-
-
                                         }}
                                         colors={palette}
                                         showTooltip={true}
@@ -198,16 +266,15 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                     </PopoverTrigger>
                                     <PopoverContent className='z-10'>
                                         <Card className=''>
-                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleChange} />
+                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleTitleChange} />
                                         </Card>
                                     </PopoverContent>
                                 </Popover>
                                 <div className="flex justify-center">
                                     {<BarChart className={isBig ? 'bigChart' : 'chart'}
                                         data={data}
-                                        categories={['value']}
-                                        index='name'
-                                        valueFormatter={dataFormatter}
+                                        categories={[secondKey, thirdKey]}
+                                        index={firstKey}
                                         onValueChange={(v: EventProps) => {
                                             if (!v) return;
                                             console.log(v.name)
@@ -220,7 +287,39 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                 </div>
                             </div>
                         </div>}
-                    {chartType == "barlist" &&
+                        {chartType == "barlist" &&
+    <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
+        <div className="space-y-3 w-full">
+            <Popover>
+                <PopoverTrigger asChild>
+                    <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
+                        {title || "click to change title"}
+                    </span>
+                </PopoverTrigger>
+                <PopoverContent className='z-10'>
+                    <Card className=''>
+                        <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleTitleChange} />
+                    </Card>
+                </PopoverContent>
+            </Popover>
+            <div className="flex justify-start w-full">
+                {<BarList className="ml-1/5 w-4/5"
+                    data={data}
+                    color={palette[0]}
+                    categories={secondKey} //disregard
+                    index='name'
+                    onValueChange={(v: EventProps) => {
+                        if (!v) return;
+                        console.log(v.name)
+                    }}
+                    colors={palette}
+                />}
+            </div>
+        </div>
+    </div>}
+
+
+                        {chartType == "scatterchart" &&
                         <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
                             <div className="space-y-3 w-full">
                                 <Popover>
@@ -231,16 +330,20 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
                                     </PopoverTrigger>
                                     <PopoverContent className='z-10'>
                                         <Card className=''>
-                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleChange} />
+                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleTitleChange} />
                                         </Card>
                                     </PopoverContent>
                                 </Popover>
                                 <div className="flex justify-center min-w-max">
-                                    {<BarList className={isBig ? 'bigChart' : 'chart'}
+                                    {<ScatterChart className={isBig ? 'bigChart' : 'chart'}
                                         data={data}
-                                        categories={['value']}
-                                        index='name'
-                                        valueFormatter={dataFormatter}
+                                        category={firstKey}
+                                        x={secondKey}
+                                        y={thirdKey}
+                                        showOpacity={true}
+                                        autoMinXValue={true}
+                                        autoMinYValue={true}
+                                        showLegend={false}
                                         onValueChange={(v: EventProps) => {
                                             if (!v) return;
                                             console.log(v.name)
@@ -248,27 +351,29 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
 
                                         }}
                                         colors={palette}
+                                        
                                     />}
                                 </div>
                             </div>
                         </div>}
                     <div className="menu mt-2 right-5 top-0 bottom-0 absolute flex">
-                        <motion.nav className='min-h-full'>
+                        <motion.nav className='min-h-full overflow-visible'>
+                            {/* color selection */}
                             <Popover>
                                 <PopoverTrigger asChild className='p-0'>
                                     <Button variant='secondary' className='mr-1 p-0.5'><Icon size="sm" icon={RiPaletteFill} /></Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="">
                                     <Card className="mx-auto max-w-md">
-                                        <TabGroup>
+                                        <TabGroup className='z-50'>
                                             <TabList className="">
                                                 <Tab>Preset</Tab>
                                                 <Tab>Custom</Tab>
                                             </TabList>
                                             <TabPanels>
                                                 <TabPanel>
-                                                    {palettes.map(element => (
-                                                        <Button className={`bg-${element[0]} max-w-3.5`} onClick={() => setPalette(concatenateArray(element))}></Button>
+                                                    {palettes.map((element, id) => (
+                                                        <Button key={id} className={`bg-${element[0]} max-w-3.5`} onClick={() => setPalette(concatenateArray(element))}></Button>
 
                                                     ))}
                                                 </TabPanel>
@@ -307,63 +412,95 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
 
                                 </PopoverContent>
                             </Popover>
-                        </motion.nav>
-                        <motion.nav className=''
-                            initial={false}
-                            animate={isOpen ? "open" : "closed"}
-                        >
+                                    {/* select data */}
+                                    <Popover>
+                                <PopoverTrigger asChild className='p-0'>
+                                    <Button variant='secondary' className='mr-1 p-0.5'><Icon size="sm" icon={RiHammerFill} /></Button>
+                                </PopoverTrigger>
+                                <PopoverContent>
+                                    <Card>
+                                    <div className="mb-2 mt-2 text-center font-mono text-sm text-slate-500"> Label </div>
+                                        <Select value={firstKey} onValueChange={(value) => setFirstKey(value)}>
+                                            {keys && keys.map((item: string) => (
+                                                <SelectItem key={item} value={item}>
+                                                    {item}
+                                                </SelectItem>
+                                            ))}
+                                        </Select>
+                                        <div className="mb-2 mt-2 text-center font-mono text-sm text-slate-500"> Data 1</div>
+                                        <Select value={secondKey} onValueChange={(value) => setSecondKey(value)}>
+                                            {keys && keys.map((item: string) => (
+                                                <SelectItem key={item} value={item}>
+                                                    {item}
+                                                </SelectItem>
+                                            ))}
+                                        </Select>
+                                        <div className="mb-2 mt-2 text-center font-mono text-sm text-slate-500"> Data 2 </div>
+                                        <Select value={thirdKey} onValueChange={(value) => setThirdKey(value)}>
+                                            {keys && keys.map((item: string) => (
+                                                <SelectItem key={item} value={item}>
+                                                    {item}
+                                                </SelectItem>
+                                            ))}
+                                        </Select>
+                                    </Card>
+                                </PopoverContent>
+                            </Popover>
 
-                            <Button className='mt-0'
-                                onClick={() => setIsOpen(!isOpen)}
-                            >
+                        </motion.nav>
+                        <motion.nav className='overflow-visible'>
+
+                            <Popover>
+                                <PopoverTrigger asChild><Button className='mt-0'>
                                 <a>Menu</a>
                             </Button>
-                            <motion.ul
-                                className='mt-1'
-                                variants={{
-                                    open: {
-                                        clipPath: "inset(0% 0% 0% 0% round 10px)",
-                                        transition: {
-                                            type: "spring",
-                                            bounce: 0,
-                                            duration: 0.7,
-                                            delayChildren: 0,
-                                            staggerChildren: 0.05
-                                        }
-                                    },
-                                    closed: {
-                                        clipPath: "inset(10% 50% 90% 50% round 10px)",
-                                        transition: {
-                                            type: "spring",
-                                            bounce: 0,
-                                            duration: 0.3
-                                        }
-                                    }
-                                }}
-                                style={{ pointerEvents: isOpen ? "auto" : "none" }}
-                            >
-                                <motion.li variants={itemVariants} onClick={() => {
+                            </PopoverTrigger>
+                                <PopoverContent updatePositionStrategy='always'>
+
+                                                            {/* chart type submenu */}
+
+                            <Popover>
+                            <PopoverTrigger asChild className='overflow-visible'>
+                                <li><Icon size="sm" icon={RiPieChartBoxFill} /></li>
+                            </PopoverTrigger>
+
+                                <PopoverContent updatePositionStrategy='always' className='absolute overflow-visible block'>
+                                    <Card>
+                                    <li onClick={() => {
                                     setMode("pie")
                                     setChartType("circle");
                                     setCurrentIcon("pie")
-                                }}><Icon size="sm" variant={currentIcon == "pie" ? 'solid' : 'simple'} icon={RiCircleFill} /></motion.li>
-                                <motion.li variants={itemVariants} onClick={() => {
+                                }}><Icon size="sm" variant={currentIcon == "pie" ? 'solid' : 'simple'} icon={RiPieChartFill} /></li>
+                                <li onClick={() => {
                                     setMode("donut")
                                     setChartType("circle")
                                     setCurrentIcon("donut")
-                                }}  ><Icon size="sm" variant={currentIcon == "donut" ? 'solid' : 'simple'} icon={RiCircleLine} /></motion.li>
-                                <motion.li variants={itemVariants} onClick={() => {
+                                }}  ><Icon size="sm" variant={currentIcon == "donut" ? 'solid' : 'simple'} icon={RiDonutChartFill} /></li>
+                                <li onClick={() => {
                                     setChartType("bar")
                                     setCurrentIcon("bar")
-                                }}><Icon size="sm" variant={currentIcon == "bar" ? 'solid' : 'simple'} icon={RiBarChart2Fill} /></motion.li>
-                                <motion.li variants={itemVariants} onClick={() => {
+                                }}><Icon size="sm" variant={currentIcon == "bar" ? 'solid' : 'simple'} icon={RiBarChart2Fill} /></li>
+                                <li onClick={() => {
                                     setChartType("barlist")
                                     setCurrentIcon("barlist")
-                                }}><Icon size="sm" variant={currentIcon == "barlist" ? 'solid' : 'simple'} icon={RiBarChart2Fill} /></motion.li>
-                                <motion.li variants={itemVariants} onClick={() => setBig(!isBig)}><Icon size="sm" icon={isBig ? RiCollapseDiagonal2Fill : RiExpandDiagonal2Fill} /></motion.li>
-                                <motion.li variants={itemVariants} onClick={() => captureElementAndDownload()}><Icon size="sm" icon={RiDownload2Line} /></motion.li>
-                                <motion.li variants={itemVariants} ><Icon size="sm" icon={RiLayoutHorizontalLine} /></motion.li>
-                            </motion.ul>
+                                }}><Icon size="sm" variant={currentIcon == "barlist" ? 'solid' : 'simple'} icon={RiBarChartHorizontalFill} /></li>
+                                <li onClick={() => {
+                                    setChartType("scatterchart")
+                                    setCurrentIcon("scatterchart")
+                                }}><Icon size="sm" variant={currentIcon == "scatterchart" ? 'solid' : 'simple'} icon={RiBubbleChartFill} /></li>
+                                    </Card>
+                                </PopoverContent>
+                                </Popover>
+
+                                                            {/* rest of the menu */}
+
+                                <li onClick={() => setBig(!isBig)}><Icon size="sm" icon={isBig ? RiCollapseDiagonal2Fill : RiExpandDiagonal2Fill} /></li>
+                                <li onClick={() => captureElementAndDownload()}><Icon size="sm" icon={RiDownload2Line} /></li>
+                                <li onClick={() => {
+                                    props.uploadChart(storeChart())
+                                }}><Icon size="sm" variant='simple' icon={RiFolderUploadFill} /></li>    
+                            </PopoverContent>
+                            </Popover>
                         </motion.nav>
                     </div>
 

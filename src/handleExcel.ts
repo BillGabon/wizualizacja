@@ -1,16 +1,22 @@
 import * as XLSX from 'xlsx';
+import extractKeys from './extractKeys';
 
-interface dataInterface {
-  name: string;
-  value: number;
+interface DataInterface {
+  [key: string]: string | number;
 }
 
-const handleData = async (file: File): Promise<dataInterface[]> => {
+/**
+ * 
+ * @param file Excel file
+ * @returns [formatted data, array of keys as strings]
+ */
+
+const handleExcel = async (file: File): Promise<[DataInterface[], string[]]> => {
   return new Promise((resolve, reject) => {
-    const maxSize = 5 * 1024 * 1024; //5GB
+    const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (file.size > maxSize) {
-      return reject(new Error());
+      return reject(new Error('File is too large'));
     }
 
     const reader = new FileReader();
@@ -21,12 +27,14 @@ const handleData = async (file: File): Promise<dataInterface[]> => {
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json<any>(firstSheet);
 
-        const formattedData: dataInterface[] = jsonData.map((item: any) => ({
-          name: item.name,
-          value: item.value,
+        const formattedData: DataInterface[] = jsonData.map((item: any) => ({
+          ...item,
         }));
 
-        resolve(formattedData);
+        const keys = extractKeys(formattedData);
+        console.log(keys)
+        console.log(formattedData)
+        resolve([formattedData, keys]);
       } catch (error) {
         reject(error);
       }
@@ -36,4 +44,4 @@ const handleData = async (file: File): Promise<dataInterface[]> => {
   });
 };
 
-export default handleData;
+export default handleExcel;
