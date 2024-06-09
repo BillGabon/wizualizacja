@@ -1,16 +1,14 @@
 import { RiBarChart2Fill, RiBarChartHorizontalFill, RiBubbleChartFill, RiCollapseDiagonal2Fill, RiDonutChartFill, RiDownload2Line, RiExpandDiagonal2Fill, RiFolderUploadFill, RiHammerFill, RiPaletteFill, RiPieChartBoxFill, RiPieChartFill } from '@remixicon/react';
-import './App.css';
-import { DonutChart, Icon, EventProps, Button, TabGroup, TabList, Tab, TabPanels, TabPanel, Card, TextInput, BarChart,   BarList,  
-    MultiSelect,
-    MultiSelectItem,
-    Select,
-    SelectItem,
-    ScatterChart,        } from '@tremor/react';
+import '../App.css';
+import { DonutChart, Icon, EventProps, Button, Card, TextInput, BarChart, BarList, MultiSelect, MultiSelectItem, Select, SelectItem, ScatterChart } from '@tremor/react';
 import { Reorder, motion } from 'framer-motion';
 import { forwardRef, useEffect, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover';
+
 import handleExcel from '../functions/handleExcel';
+import concatenateArray from '../functions/conatenateArray';
+import conformToBarList from '../functions/conformToBarList';
 
 interface storedChart {
     data: JSON;
@@ -32,14 +30,6 @@ export interface WrapperProps {
     setItems: React.Dispatch<React.SetStateAction<number[]>>
     chartToShow: string | null
     uploadChart(data: string): Promise<void>
-}
-
-function concatenateArray(arr: any[]): any[] {
-    const concatenatedArray: any[] = arr;
-    for (let i = 0; i < 5; i++) {
-        concatenatedArray.push(...arr.slice(0, 5));
-    }
-    return concatenatedArray;
 }
 
         /* ready color schemes */
@@ -84,7 +74,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
     const [isBig, setBig] = useState<boolean>(false);
     const [title, setTitle] = useState<string>("");
     const [currentIcon, setCurrentIcon] = useState<string>()
-
+    const [barListData, setBarListData] = useState<any[]>()
 
     const [keys, setKeys] = useState<any>()
     const [firstKey, setFirstKey] = useState<any>()
@@ -111,23 +101,24 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
     }
 
 
-const unpackChart = (chartData: string): void => {
-    const chart = JSON.parse(chartData) as storedChart
-    setData(chart.data)
-    setBig(chart.isBig)
-    setCurrentIcon(chart.currentIcon)
-    setKeys(chart.keys)
-    setFirstKey(chart.firstKey)
-    setSecondKey(chart.secondKey)
-    setThirdKey(chart.thirdKey)
-    setPalette(chart.palette)
-    setChartType(chart.chartType)
-}
+    const unpackChart = (chartData: string): void => {
+        const chart = JSON.parse(chartData) as storedChart
+        setData(chart.data)
+        setBig(chart.isBig)
+        setCurrentIcon(chart.currentIcon)
+        setKeys(chart.keys)
+        setFirstKey(chart.firstKey)
+        setSecondKey(chart.secondKey)
+        setThirdKey(chart.thirdKey)
+        setPalette(chart.palette)
+        setChartType(chart.chartType)
+    }
+
     if(props.chartToShow != null) {
         unpackChart(props.chartToShow)
     }
 
-    {/* create an array of colors */}
+    /* create an array of colors */
 
     const colors = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'];
     const shades = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'];
@@ -185,6 +176,12 @@ const unpackChart = (chartData: string): void => {
         }
     }, [keys]);
 
+    useEffect(() => {
+        if(data && firstKey && secondKey) {
+        setBarListData(conformToBarList(data, firstKey, secondKey))
+        }
+    }), [firstKey, secondKey]
+
     return (
 
         <>
@@ -193,7 +190,7 @@ const unpackChart = (chartData: string): void => {
 
                     {/* close item red rectangle */}
 
-                <motion.div className="absolute left-0 top-0 bottom-0 bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity w-1/12 max-w-10 overflow-hidden rounded-l origin-left"
+                <motion.div className="absolute left-0 top-0 bottom-0 bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity w-1/12 max-w-10 overflow-hidden rounded-l origin-left z-20"
                     onClick={() => {
                         const newItems = [...props.items];
                         removeItem(newItems, props.id);
@@ -206,12 +203,11 @@ const unpackChart = (chartData: string): void => {
                 }
 
                             {/* charts */}
+
                 {data && <>
-                    {
-                        chartType == "circle" &&
-                        <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
-                            <div className="space-y-3 w-full">
-                                <Popover>
+                    <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
+                    <div className="space-y-3 w-full">
+                    <Popover>
                                     <PopoverTrigger asChild>
                                         <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
                                             {title || "click to change title"}
@@ -223,6 +219,9 @@ const unpackChart = (chartData: string): void => {
                                         </Card>
                                     </PopoverContent>
                                 </Popover>
+                    {
+                        chartType == "circle" &&
+                        <>
                                 <div className="flex justify-center h-full p-0 z-50">
                                     {<DonutChart className={isBig ? 'bigChart' : 'chart'}
                                         data={data}
@@ -238,26 +237,10 @@ const unpackChart = (chartData: string): void => {
                                         showTooltip={true}
                                     />}
                                 </div>
-                            </div>
-                        </div>
+                                </>
                     }
-
                     {chartType == "bar" &&
-                        <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
-                            <div className="space-y-3 w-full">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
-                                            {title || "click to change title"}
-                                        </span>
-                                    </PopoverTrigger>
-                                    <PopoverContent className='z-10'>
-                                        <Card className=''>
-                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleTitleChange} />
-                                        </Card>
-                                    </PopoverContent>
-                                </Popover>
-                                <div className="ml-10 flex justify-center">
+                                <div className="ml-5 flex justify-center">
                                     {<BarChart className={isBig ? 'bigChart' : 'chart'}
                                         data={data}
                                         categories={[secondKey, thirdKey]}
@@ -271,27 +254,11 @@ const unpackChart = (chartData: string): void => {
                                         colors={palette}
                                         showTooltip={true}
                                     />}
-                                </div>
-                            </div>
-                        </div>}
+                                </div>}
                         {chartType == "barlist" &&
-    <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
-        <div className="space-y-3 w-full">
-            <Popover>
-                <PopoverTrigger asChild>
-                    <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
-                        {title || "click to change title"}
-                    </span>
-                </PopoverTrigger>
-                <PopoverContent className='z-10'>
-                    <Card className=''>
-                        <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleTitleChange} />
-                    </Card>
-                </PopoverContent>
-            </Popover>
-            <div className="flex justify-start w-full">
-                {<BarList className="ml-10 w-4/5"
-                    data={data}
+            <div className="w-full flex justify-start">
+                {<BarList className="ml-9 w-4/5"
+                    data={barListData!}
                     color={palette[0]}
                     onValueChange={(v: EventProps) => {
                         if (!v) return;
@@ -299,27 +266,11 @@ const unpackChart = (chartData: string): void => {
                     }}
                 />}
             </div>
-        </div>
-    </div>}
-
+    }
 
                         {chartType == "scatterchart" &&
-                        <div className="space-y-12 m-0 min-w-full min-h-full" id='downloadable'>
-                            <div className="space-y-3 w-full">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <span className="text-center block font-mono text-tremor-default text-tremor-content dark:text-dark-tremor-content">
-                                            {title || "click to change title"}
-                                        </span>
-                                    </PopoverTrigger>
-                                    <PopoverContent className='z-10'>
-                                        <Card className=''>
-                                            <TextInput className="mx-auto max-w-xs" placeholder="change title" onChange={handleTitleChange} />
-                                        </Card>
-                                    </PopoverContent>
-                                </Popover>
                                 <div className="flex justify-center min-w-max">
-                                    {<ScatterChart className={isBig ? 'bigChart' : 'chart'}
+                                    {<ScatterChart className={isBig ? 'bigChart mt-3' : 'chart mt-3'}
                                         data={data}
                                         category={firstKey}
                                         x={secondKey}
@@ -337,9 +288,9 @@ const unpackChart = (chartData: string): void => {
                                         colors={palette}
                                         
                                     />}
+                                </div>}
                                 </div>
-                            </div>
-                        </div>}
+                                </div>
                     <div className="menu mt-2 right-5 top-0 bottom-0 absolute flex h-auto max-h-2">
                         <motion.nav className='overflow-visible'>
                             {/* color selection */}
@@ -349,19 +300,8 @@ const unpackChart = (chartData: string): void => {
                                 </PopoverTrigger>
                                 <PopoverContent className="z-50">
                                     <Card className="mx-auto max-w-md">
-                                        <TabGroup className='z-50'>
-                                            <TabList className="">
-                                                <Tab>Preset</Tab>
-                                                <Tab>Custom</Tab>
-                                            </TabList>
-                                            <TabPanels>
-                                                <TabPanel>
-                                                    {palettes.map((element, id) => (
-                                                        <Button key={id} className={`bg-${element[0]} max-w-3.5`} onClick={() => setPalette(concatenateArray(element))}></Button>
-
-                                                    ))}
-                                                </TabPanel>
-                                                <TabPanel className='flex flex-row'>
+                                    <div className="mb-2 text-center font-mono text-sm text-slate-500"> Palette </div>
+                                                    <div className='flex flex-row'>
                                                     {palette.slice(0, 5).map((element, id) => (
                                                         <Popover key={id}>
                                                             <PopoverTrigger asChild>
@@ -388,9 +328,12 @@ const unpackChart = (chartData: string): void => {
                                                             </PopoverContent>
                                                         </Popover>
                                                     ))}
-                                                </TabPanel>
-                                            </TabPanels>
-                                        </TabGroup>
+                                                    </div>
+                                                    <div className="mb-2 mt-2 text-center font-mono text-sm text-slate-500"> Presets </div>
+                                                    {palettes.map((element, id) => (
+                                                        <Button key={id} className={`bg-${element[0]} max-w-3.5`} onClick={() => setPalette(concatenateArray(element))}></Button>
+
+                                                    ))}
                                     </Card>
 
 
@@ -442,7 +385,7 @@ const unpackChart = (chartData: string): void => {
                             </Button>
                             </PopoverTrigger>
                                 <PopoverContent updatePositionStrategy='always'>
-
+                                <Card>
                                                             {/* chart type submenu */}
 
                             <Popover>
@@ -485,6 +428,7 @@ const unpackChart = (chartData: string): void => {
                                 <li onClick={() => {
                                     props.uploadChart(storeChart())
                                 }}><Icon size="sm" variant='simple' icon={RiFolderUploadFill} /></li>    
+                                </Card>
                             </PopoverContent>
                             </Popover>
                         </motion.nav>

@@ -8,13 +8,13 @@
  */
 
 
-function conformToBarList(array: Array<{ [key: string]: any }>, name: string, value: string): Array<{ name: any, value: any }> {
-    return array.map(obj => {
-      return {
-        name: obj[name],
-        value: obj[value]
-      };
-    });
-  }
-  
-  export default conformToBarList
+function conformToBarList(array: Array<{ [key: string]: any }>, name: string, value: string): any[] {
+  return array.map(obj => {
+    return {
+      name: obj[name],
+      value: obj[value]
+    };
+  });
+}
+
+export default conformToBarList;
