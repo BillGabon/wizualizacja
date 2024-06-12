@@ -32,8 +32,6 @@ const handleExcel = async (file: File): Promise<[DataInterface[], string[]]> => 
         }));
 
         const keys = extractKeys(formattedData);
-        console.log(keys)
-        console.log(formattedData)
         resolve([formattedData, keys]);
       } catch (error) {
         reject(error);

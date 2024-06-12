@@ -1,5 +1,13 @@
 html {
   background-color: rgb(112, 112, 112);
+  
+}
+html::-webkit-scrollbar {
+  display: none;
+}
+html {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .tile {
@@ -44,6 +52,11 @@ html {
     min-width: 27vh;
   }
   .bigChart {
-    min-height: 70vh;
-    min-width: 70vh;
+    min-height: 72vh;
+    min-width: 72vh;
+  }
+
+  td, th, tr, table {
+     border: 2px solid black;
+     border-collapse: collapse;
   }
