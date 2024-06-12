@@ -75,7 +75,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
     const [chartType, setChartType] = useState<'circle' | 'bar' | 'barlist' | 'scatterchart'>('circle'); // type of chart
     const [isBig, setBig] = useState<boolean>(false); // whether this item should be big or not
     const [title, setTitle] = useState<string>(''); // title for the chart 
-    const [currentIcon, setCurrentIcon] = useState<string>() // highlited icon in the charts menu
+    const [currentIcon, setCurrentIcon] = useState<string>("pie") // highlited icon in the charts menu
     const [barListData, setBarListData] = useState<any[]>() // data formatted for bar list chart
     const [storedName, setStoredName] = useState<string>('')
 
