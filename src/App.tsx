@@ -353,7 +353,7 @@ function App() {
       <Reorder.Group axis="y" values={items} onReorder={setItems}>
         <AnimatePresence mode='popLayout'>
           {items.map((id) => (
-            <ChartWrapper key={id} id={id} count={count} items={items} setItems={setItems} uploadChart={uploadChart} chartList={downloadedCharts} />
+            <ChartWrapper key={id} id={id} count={count} items={items} setItems={setItems} uploadChart={uploadChart} chartList={downloadedCharts} loggedUser={loggedUser} />
           ))}
         </AnimatePresence>
       </Reorder.Group>

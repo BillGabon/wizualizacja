@@ -34,6 +34,7 @@ export interface WrapperProps {
     setItems: React.Dispatch<React.SetStateAction<number[]>>
     chartList: PassedData[],
     uploadChart(name: string, data: string): Promise<void>;
+    loggedUser: any;
 }
 
 // ready color schemes
@@ -529,7 +530,8 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
 
                                         <li onClick={() => setBig(!isBig)}><Icon size='sm' icon={isBig ? RiCollapseDiagonal2Fill : RiExpandDiagonal2Fill} /></li>
                                         <li onClick={() => captureElementAndDownload()}><Icon size='sm' icon={RiDownload2Line} /></li>
-                                        <li><Icon size='sm' variant='simple' icon={RiFolderUploadFill} onClick={() => setIsSaveOpen(true)} /></li>
+                                        {props.loggedUser &&
+                                            <li><Icon size='sm' variant='simple' icon={RiFolderUploadFill} onClick={() => setIsSaveOpen(true)} /></li>}
                                     </Card>
                                 </PopoverContent>
                             </Popover>
