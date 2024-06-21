@@ -173,6 +173,7 @@ const ChartWrapper = forwardRef(function ChartWrapper(props: WrapperProps, ref: 
         if (file) {
             try {
                 const [gotData, gotKeys] = await handleExcel(file)
+                console.log(gotData)
                 setData(gotData)
                 setKeys(gotKeys)
 

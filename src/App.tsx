@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover
 import axios from 'axios';
 import { RiFolder2Fill, RiDeleteBin6Line, RiDownload2Fill, RiQuestionFill, RiInformation2Fill, RiHammerFill } from '@remixicon/react';
 
-const serverAddress: string = 'http://localhost:5000';
+const serverAddress: string = "http://jawor.wzks.uj.edu.pl";
 
 type User = {
   email: string;
@@ -350,7 +350,7 @@ function App() {
       </div>
 
       {/* Items */}
-      <Reorder.Group axis="y" values={items} onReorder={setItems}>
+      <Reorder.Group axis="y" values={items} onReorder={setItems} className='last:mb-60'>
         <AnimatePresence mode='popLayout'>
           {items.map((id) => (
             <ChartWrapper key={id} id={id} count={count} items={items} setItems={setItems} uploadChart={uploadChart} chartList={downloadedCharts} loggedUser={loggedUser} />
